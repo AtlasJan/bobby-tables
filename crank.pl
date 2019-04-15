@@ -1,5 +1,6 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 
+use 5.010;
 use strict;
 use warnings;
 
@@ -8,7 +9,7 @@ eval 'use Carp::Always'; # Not everyone has it
 use Getopt::Long;
 use File::Slurp;
 use Encode qw(decode encode);
-use Text::Markdown ();
+use Markdent::Simple::Fragment ();
 use Template ();
 use Template::Constants qw( :debug :chomp );
 
@@ -26,27 +27,31 @@ my $home  = 'Home';
 my $about = 'About';
 
 my $pages = [
-    index        => $home,
-    about        => $about,
-    asp          => 'ASP',
-    coldfusion   => 'ColdFusion',
-    csharp       => 'C#',
-    delphi       => 'Delphi',
-    dotnet       => '.NET',
-    go           => 'Go',
-    java         => 'Java',
-    perl         => 'Perl',
-    php          => 'PHP',
-    plsql        => 'PL/SQL',
-    postgresql   => 'PostgreSQL',
-    python       => 'Python',
-    ruby         => 'Ruby',
-    scheme       => 'Scheme',
+    index          => $home,
+    about          => $about,
+    adodotnet      => 'ADO.NET',
+    adodotnet_orm  => 'ADO.NET ORM',
+    asp            => 'ASP',
+    coldfusion     => 'ColdFusion',
+    com_automation => 'COM',
+    csharp         => 'C#',
+    delphi         => 'Delphi',
+    adodotnet_ef   => 'Entity Framework',
+    go             => 'Go',
+    java           => 'Java',
+    msaccess       => 'MS Access',
+    perl           => 'Perl',
+    php            => 'PHP',
+    plsql          => 'PL/SQL',
+    postgresql     => 'PostgreSQL',
+    python         => 'Python',
+    rlang          => 'R',
+    ruby           => 'Ruby',
+    scheme         => 'Scheme',
+    vbdotnet       => 'VB.NET',
 ];
 
 MAIN: {
-    my $m = Text::Markdown->new;
-
     my @sidelinks;
 
     my %tt_defaults = (
@@ -65,7 +70,7 @@ MAIN: {
     my @pages = @{$pages};
     while ( @pages ) {
         my ($section,$desc) = splice( @pages, 0, 2 );
-        my $path = ($section eq 'index') ? './' : "./$section.html";
+        my $path = ($section eq 'index') ? './' : "./$section";
         push( @sidelinks, {
             path => $path,
             text => $desc,
@@ -87,7 +92,11 @@ MAIN: {
         $tt_first_pass->process( \$source, undef, \$first_pass )
             || die sprintf("file: %s\nerror: %s\n", "$sourcepath/$section.md.tt2", $tt->error);
 
-        my $html = $m->markdown($first_pass);
+        my $parser = Markdent::Simple::Fragment->new;
+        my $html = $parser->markdown_to_html(
+            dialect  => 'GitHub',
+            markdown => $first_pass,
+        );
         $html =~ s{<code>\n}{<code>}smxg;
         $vars->{body} = $html;
         $vars->{section} = ($section eq 'index') ? '.' : "$section.html";
